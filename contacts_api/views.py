@@ -13,6 +13,7 @@ from .models import Contact
 from .serializers import ContactSerializer
 from .permissions import IsOwnerOrReadOnly
 from .pagination import ContactPagination
+from .serializers import ContactHistorySerializer
 
 class ContactFilter(FilterSet):
     name = filters.CharFilter(field_name="name", lookup_expr='icontains')
@@ -121,3 +122,17 @@ class ImportContactsView(APIView):
 
         Contact.objects.bulk_create(contacts)
         return Response({'message': 'Contacts imported successfully'}, status=status.HTTP_201_CREATED)
+
+class ContactHistoryView(generics.RetrieveAPIView):
+    serializer_class = ContactHistorySerializer
+
+    def get(self, request, *args, **kwargs):
+        contact_id = kwargs.get('id')
+        try:
+            contact = Contact.objects.get(id=contact_id)
+        except Contact.DoesNotExist:
+            return Response({"error": "Contact not found"}, status=404)
+
+        history = contact.history.all()
+        serializer = ContactHistorySerializer(history, many=True)
+        return Response(serializer.data)
